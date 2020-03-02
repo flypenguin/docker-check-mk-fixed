@@ -2,7 +2,12 @@
 
 if [ -z "$1" ] ; then
 
-  cat build-tags.txt | parallel ./$(basename $0)
+  cat build-tags.txt | while read BUILD_TAG ; do
+    ./$(basename $0) $BUILD_TAG
+  done
+  
+  # parallel was so ... non-noisy. I want to see whats going on.
+  #parallel ./$(basename $0)
 
   echo ""
   echo "***** DONT FORGET TO COMMIT *****"
@@ -18,6 +23,7 @@ else
   BUILD_MARKER="build-markers/$TAG"
   DOCKERFILE="Dockerfile.$TAG"
 
+  set -e 
   if [ -f "$BUILD_MARKER" ] ; then
     echo "Tag $TAG already built. Skipping."
     exit
