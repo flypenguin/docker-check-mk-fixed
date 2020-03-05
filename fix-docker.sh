@@ -24,8 +24,3 @@ echo "ServerName my.server.com" >> listen-port.conf
 # reload apache gracefully
 PIDFILE=$(cat apache.conf | grep PidFile | awk '{print $2}')
 kill -USR1 $(cat $PIDFILE)
-
-# make debugging with 'docker exec' nicer
-echo 'alias ls="ls --color"' >> /root/.bashrc
-echo 'alias ll="ls -lh"' >> /root/.bashrc
-(apt-get update; apt-get install -y vim less) > /dev/null 2>&1
