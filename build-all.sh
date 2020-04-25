@@ -5,7 +5,7 @@ if [ -z "$1" ] ; then
   cat build-tags.txt | while read BUILD_TAG ; do
     ./$(basename $0) $BUILD_TAG
   done
-  
+
   # parallel was so ... non-noisy. I want to see whats going on.
   #parallel ./$(basename $0)
 
@@ -19,11 +19,13 @@ else
   TAG="$1"
   TGT_REPO="flypenguin/check-mk-fixed"
   SRC_REPO="checkmk/check-mk-raw"
-  IMAGE="$TGT_REPO:$TAG"
-  BUILD_MARKER="build-markers/$TAG"
+  REVISION=$(cat build-revision)
+  IMAGE_TAG="$TAG-r$REVISION"
+  IMAGE="$TGT_REPO:$IMAGE_TAG"
+  BUILD_MARKER="build-markers/$IMAGE_TAG"
   DOCKERFILE="Dockerfile.$TAG"
 
-  set -e 
+  set -e
   if [ -f "$BUILD_MARKER" ] ; then
     echo "Tag $TAG already built. Skipping."
     exit
@@ -35,7 +37,6 @@ else
     | sed -Ee "s%^FROM.*%FROM $SRC_REPO:$TAG%g" > Dockerfile.$TAG
 
   docker build -t "$IMAGE" -f "$DOCKERFILE" .
-  docker push $IMAGE
-  touch "$BUILD_MARKER"
+  echo "$IMAGE" > "$BUILD_MARKER"
 
 fi

@@ -1,26 +1,41 @@
 #!/usr/bin/env bash
 
-set -x
-cd /opt/omd/sites/cmk/etc/apache
+# $1 - site name
+if [ ! -z "$1" ] ; then
 
-# delete unneeded things
-rm proxy-port.conf apache-own.conf
+  SITE="$1"
 
-#sed -Ei \
-#  -e 's/^UseCanonicalName.*/UseCanonicalName Off\nUseCanonicalPhysicalPort Off/g' \
-#  apache.conf
+  echo "Fixing site '$SITE'"
+  set -euo pipefail
+  cd "/opt/omd/sites/${SITE}/etc/apache"
 
-# remove comments and empty lines from config files
-sed -Ei \
-  -e '/^\s*(#.*)?$/d' \
-  *.conf \
-  conf.d/*.conf
+  # delete unneeded things
+  echo "   Delete {proxy-port,apache-own}.conf"
+  rm -f proxy-port.conf apache-own.conf
 
-# change ServerName to something NOT 0.0.0.0:5000 ...
-# strangely this seems to fix the issue
-sed -i "/ServerName/d" listen-port.conf
-echo "ServerName my.server.com" >> listen-port.conf
+  # remove comments and empty lines from config files
+  echo "   Formatting config files"
+  find . -type f -iname "*.conf" -print0 \
+    | xargs -0 sed -Ei -e '/^\s*(#.*)?$/d'
 
-# reload apache gracefully
-PIDFILE=$(cat apache.conf | grep PidFile | awk '{print $2}')
-kill -USR1 $(cat $PIDFILE)
+  # change ServerName to something NOT 0.0.0.0:5000 ...
+  # strangely this seems to fix the issue
+  echo "   Fixing apache config"
+  sed -i "/ServerName/d" listen-port.conf
+  echo "ServerName my.server.com" >> listen-port.conf
+
+  # reload apache gracefully
+  echo "   Reloading apache"
+  PIDFILE=$(cat apache.conf | grep PidFile | awk '{print $2}')
+  kill -USR1 $(cat $PIDFILE)
+
+else
+
+  find /opt/omd/sites -maxdepth 1 ! -path /opt/omd/sites -type d \
+  | while read SITE; do
+    $0 "$(basename "$SITE")"
+  done
+
+  echo "All sites fixed, exiting."
+
+fi
